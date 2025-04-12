@@ -1,7 +1,17 @@
-export default async function handler(request, response) {
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5I-1oT8BJlToBAqmNxmjQBQM26ROTJl5LBTeLwefTSYRRDlNnO5gaQFISioScq0dYbg/exec";
-  const SECRET_TOKEN = "TutaitaTuturuma11";
+const express = require('express');
+const bodyParser = require('body-parser');
+const fetch = require('node-fetch');
 
+const app = express();
+const port = process.env.PORT || 3000;
+
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5I-1oT8BJlToBAqmNxmjQBQM26ROTJl5LBTeLwefTSYRRDlNnO5gaQFISioScq0dYbg/exec";
+const SECRET_TOKEN = "TutaitaTuturuma11";
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.all('/', async (request, response) => {
   if (request.method !== "POST" && request.method !== "GET") {
     return response.status(405).json({ error: "Method not allowed" });
   }
@@ -45,4 +55,8 @@ export default async function handler(request, response) {
     console.error("API error:", error);
     response.status(500).json({ error: "Internal Server Error" });
   }
-}
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
+});
