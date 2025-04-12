@@ -1,59 +1,41 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
+const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(cors());
+app.use(express.json());
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5I-1oT8BJlToBAqmNxmjQBQM26ROTJl5LBTeLwefTSYRRDlNnO5gaQFISioScq0dYbg/exec";
-const SECRET_TOKEN = "TutaitaTuturuma11";
-const GAME_SECRET = "TutaitaTuturuma11"; // ✅ clave privada entre tu juego y tu API
+const API_URL = 'https://script.google.com/macros/s/AKfycbyERY9S0l_wky7Vxj3UDhbIyFnrwgXiegFbUewin1xfBvNu1aWRAwePtbusxSJvCebDA/exec';
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-app.all('/', async (request, response) => {
+app.get('/', async (req, res) => {
   try {
-    let body = {};
-
-    if (request.method === "GET") {
-      body = request.query;
-    } else if (request.headers["content-type"]?.includes("application/json")) {
-      body = request.body;
-    } else if (request.headers["content-type"]?.includes("form-data") || request.headers["content-type"]?.includes("application/x-www-form-urlencoded")) {
-      body = request.body;
-    } else {
-      return response.status(400).json({ error: "Unsupported content type" });
-    }
-
-    const { action, name, score, time, game_secret } = body;
-
-    // 🔒 Verificar clave secreta del juego
-    if (game_secret !== GAME_SECRET) {
-      return response.status(403).json({ error: "Unauthorized" });
-    }
-
-    if (!action || !["save", "get"].includes(action)) {
-      return response.status(400).json({ error: "Invalid action" });
-    }
-
-    const data = { action, name, score, time, token: SECRET_TOKEN };
-
-    const googleResponse = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-
-    const googleData = await googleResponse.json();
-    response.status(200).json(googleData);
-
-  } catch (error) {
-    console.error("API error:", error);
-    response.status(500).json({ error: "Internal Server Error" });
+    const url = `${API_URL}?${new URLSearchParams(req.query).toString()}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+app.post('/', async (req, res) => {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Proxy running on port ${PORT}`);
 });
