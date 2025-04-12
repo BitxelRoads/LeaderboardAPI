@@ -7,40 +7,37 @@ const port = process.env.PORT || 3000;
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5I-1oT8BJlToBAqmNxmjQBQM26ROTJl5LBTeLwefTSYRRDlNnO5gaQFISioScq0dYbg/exec";
 const SECRET_TOKEN = "TutaitaTuturuma11";
+const GAME_SECRET = "TutaitaTuturuma11"; // ✅ clave privada entre tu juego y tu API
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.all('/', async (request, response) => {
-  if (request.method !== "POST" && request.method !== "GET") {
-    return response.status(405).json({ error: "Method not allowed" });
-  }
-
   try {
-    const contentType = request.headers["content-type"] || "";
     let body = {};
 
-    if (contentType.includes("application/json")) {
+    if (request.method === "GET") {
+      body = request.query;
+    } else if (request.headers["content-type"]?.includes("application/json")) {
       body = request.body;
-    } else if (contentType.includes("form-data") || contentType.includes("application/x-www-form-urlencoded")) {
+    } else if (request.headers["content-type"]?.includes("form-data") || request.headers["content-type"]?.includes("application/x-www-form-urlencoded")) {
       body = request.body;
     } else {
       return response.status(400).json({ error: "Unsupported content type" });
     }
 
-    const { action, name, score, time } = body;
+    const { action, name, score, time, game_secret } = body;
+
+    // 🔒 Verificar clave secreta del juego
+    if (game_secret !== GAME_SECRET) {
+      return response.status(403).json({ error: "Unauthorized" });
+    }
 
     if (!action || !["save", "get"].includes(action)) {
       return response.status(400).json({ error: "Invalid action" });
     }
 
-    const data = {
-      action,
-      name,
-      score,
-      time,
-      token: SECRET_TOKEN
-    };
+    const data = { action, name, score, time, token: SECRET_TOKEN };
 
     const googleResponse = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
@@ -58,5 +55,5 @@ app.all('/', async (request, response) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
